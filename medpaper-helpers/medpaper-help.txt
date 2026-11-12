@@ -8,6 +8,7 @@ medpaper - MedPaper workflow driver
   medpaper card [--details]             show the active stage card
   medpaper decide <name> <value> -w "<why>"   record a gated decision
   medpaper handoff                      bounded resume context after context compaction
+  medpaper export --scope S19|S24       export a review pack ZIP for third-party review
   medpaper tree -v                      whole pipeline with status
   medpaper doctor                       environment and wiring check
   medpaper clean [--apply]              report/delete scratch files

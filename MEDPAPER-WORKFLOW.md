@@ -76,7 +76,7 @@ wf status → wf card（读当前阶段卡）→ 按需加载 reference/<专题�
 |---|---|
 | S01 | 仅当 `open_questions` 有会改变设计的歧义时提问一次 |
 | S02 / S06 / S12.5 / 任何止损点 | 阅读证据与建议，拍板 GO/PIVOT/STOP/返修 |
-| S19 | 审阅全文+表+图+独立报告；提意见批次；最终明确回复**"我确认这一版"** → 科学母稿冻结 |
+| S19 | 审阅全文+表+图+独立报告；提意见批次；最终明确回复**"我确认这一版"** → 科学母稿冻结。需要给第三方审核时：`medpaper export --scope S19` 生成审阅包 ZIP（内容位置 = 审阅轮报告 + 稿件/表/图路径） |
 | S20 | 从候选清单（接受概率排序+退稿梯队）选定期刊 |
 | S21 | 提供作者/单位/ORCID/基金/利益冲突/伦理/数据可用性等事实（不编造） |
 | S24 | 检查投稿包；修改；明确回复**"我确认这一版"** → 冻结 |
@@ -93,6 +93,7 @@ wf status → wf card（读当前阶段卡）→ 按需加载 reference/<专题�
 5. **不编造**：伦理/基金/利益冲突/作者/AI 使用声明一律由用户提供；AI 声明只在用户明确要求时写入。
 6. **引擎纯净**：不修改引擎母版；论文级差异走论文 `.wf/config.toml` 或 overrides；`--force` 不能豁免完整性门禁。
 7. **隐私**：患者级/私密数据不上传外部服务；本地数据原地只读登记。
+8. **参考文献池纪律（用户明确要求）**：S13 文献库目标规模约 **50 篇**（含 benchmark ranges 35–60 的容许带），按论证角色覆盖（临床问题/背景/前作/方法学/比较/机制）；**S13 收尾必须向用户报告池内文献数与各角色覆盖情况**；不足时先补检索再收尾，禁止"池子凑不满就带病推进"；引用数量不得低于论证实际需要（不为省额度删引用，也不为凑数加引用）。
 
 ## 7. 命名与目录规范（通用）
 
@@ -129,6 +130,7 @@ tools/pubmed/fulltext.py fetch|register          # 全文（OA 路由 / 外部�
 tools/tables/（三线表生成）、tools/figures/render_r.py --figure "..."、tools/figures/qc.py
 # 审阅与返工
 tools/review_round.py start|ingest|close|decide
+tools/review_round.py export --scope S19      # 导出审阅包 ZIP 供第三方审核（用户明确要求时）
 tools/rework.py batch|status|check|close
 # 期刊层
 tools/journal.py begin|fetch|register|show|csl|seal|status|check
