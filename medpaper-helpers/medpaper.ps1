@@ -74,6 +74,8 @@ switch ($Command.ToLower()) {
   default {
     $paper = Get-PaperDir
     if (-not $paper) { Write-Host "Not inside a paper workspace." -ForegroundColor Yellow; exit 1 }
-    Invoke-Wf $paper @($Command, @Args)
+    $clean = @($Args | Where-Object { $_ -ne $null -and [string]$_ -ne "" })
+    $wfArgs = @($Command) + $clean
+    Invoke-Wf $paper -WfArgs $wfArgs
   }
 }
