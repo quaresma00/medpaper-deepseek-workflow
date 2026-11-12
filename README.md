@@ -1,10 +1,12 @@
-# MedPaper Workflow
+# MedPaper Workflow — DeepSeek Edition
 
-面向医学与临床研究的**门禁式论文生产工作流**：把"研究思路"推进为经全量数据、真实文献、统计结果、图表、人工复核与期刊规则共同校验的 **SCIE original article 投稿包**。
+面向医学与临床研究的**门禁式论文生产工作流**（DeepSeek Harness 专用版）：把"研究思路"推进为经全量数据、真实文献、统计结果、图表、人工复核与期刊规则共同校验的 **SCIE original article 投稿包**。
 
 - 引擎：medpaper 1.29.0（25 阶段 / 296 门禁，**与具体研究无关**）
-- 执行层：为 AI 智能体（DeepSeek 系 / Codex 系均可）适配的驱动文档与辅助工具
+- 执行层：为 DeepSeek Harness 适配的驱动封装（`medpaper` 一条命令）、用户级 skill、全局 AGENTS.md 入口
 - 已验证：真实大规模公开数据跑通 S01–S07 核心科学链（全量普查、复现证明、写作冻结、图表对标密封）；引擎自检 231/231
+
+> 姊妹仓库：Codex 版见 `medpaper-codex-workflow`，Kiro 版见 `medpaper-kiro-workflow`，Gemini 版见 `medpaper-pipeline-gemini`。本仓库是 **DeepSeek 版**。
 
 ## 这套工作流解决什么
 
@@ -19,14 +21,30 @@
 - Word 黑点/蓝色字/超链接/无 References 标题/Aptos 字体 → 确定性 Word 构建 + 渲染后视觉检查
 - 投稿包缺文件、指南要求未逐条执行 → 指南逐条要求清单 + 合规矩阵 + 独立终审
 
-## 快速开始（3 步）
+## 在 DeepSeek Harness 中调用（像 `$medpaper` 一样一句话启动）
+
+安装（一次性）：
+
+```powershell
+pwsh .\dsh\install.ps1   # 装入用户级 skill + 全局 AGENTS.md 入口
+```
+
+之后在任意 DeepSeek 会话中：
+
+- **新建研究**：`medpaper new -Slug <研究名> -IdeaFile <思路.md> [-DataDir <数据目录>]`
+- **恢复研究**：在论文工作区开新会话，直接说 **"继续 medpaper"**（skill 与 AGENTS.md 会自动生效，智能体自动驱动 `medpaper status → card → 阶段工作 → check → advance`）
+- **手动驱动**：`medpaper`（状态+任务卡）/ `medpaper check` / `medpaper advance -n "…"` / `medpaper decide …`（`medpaper.ps1` 自动注入环境变量，无需手动设置）
+
+三种入口机制与安装说明见 `dsh/README.md`。
+
+## 快速开始（命令行方式）
 
 ```powershell
 # 1) 全局环境（一次性，User 级永久生效）
 pwsh .\medpaper-helpers\medpaper.ps1 init-env -key "<你的NCBI key>" -email "you@example.org"
 
-# 2) 把 medpaper 命令装进 PATH（一次性，写入 PowerShell 配置文件）
-Add-Content $PROFILE 'function medpaper { pwsh "F:\path\to\medpaper-workflow\medpaper-helpers\medpaper.ps1" @args }'
+# 2) 把 medpaper 命令装进 PATH（一次性）
+Add-Content $PROFILE 'function medpaper { pwsh "F:\path\to\medpaper-deepseek-workflow\medpaper-helpers\medpaper.ps1" @args }'
 . $PROFILE
 
 # 3) 新建论文工作区（任意思路、任意研究类型、任意公开数据集）
@@ -75,12 +93,13 @@ S01 整理想法 → S02 可行性(go/no-go#1) → S03 方案 → S04 全量数�
 ## 目录结构
 
 ```text
-medpaper-workflow/
+medpaper-deepseek-workflow/
 ├── pipeline/            # 25 阶段与门禁的唯一机器配置（引擎，只读）
 ├── tools/               # 状态机、文献核验、表图、Word 构建等工具（引擎，只读）
 ├── reference/           # 专题执行规范（引擎，只读）
 ├── project/             # 单篇论文模板骨架（00_input~08_submission）
-├── medpaper-helpers/    # 智能体辅助层：new-paper.ps1（建论文）、medpaper.ps1（驱动封装）、capture_guidelines.py（浏览器抓指南）
+├── medpaper-helpers/    # DeepSeek 执行层：new-paper.ps1（建论文）、medpaper.ps1（一条命令驱动）、capture_guidelines.py（浏览器抓指南）
+├── dsh/                 # DeepSeek Harness 集成：用户级 skill、全局 AGENTS.md 入口、install.ps1
 ├── AGENTS.md            # 引擎执行策略（话题路由表）
 └── MEDPAPER-WORKFLOW.md # 智能体执行版总文档（本仓库的"怎么用"）
 ```
