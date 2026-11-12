@@ -1,0 +1,81 @@
+# S08 - Methods
+Read the Methods section of `reference/medical-writing.md`. Use actual methods and true
+post-hoc status; internal plan history stays backstage. Reuse already-read study context.
+
+## Purpose
+Write a concise, journal-native main Methods section. Create a supplementary Methods file
+only when reproducibility requires detail that would obscure the main narrative.
+
+## Inputs
+- `01_protocol/protocol_final.md` and `01_protocol/protocol_diff.md`
+- `02_data/codebook.md`, `02_data/provenance.md`
+- `03_analysis/method_scan.md` (for the methods you cite)
+- `03_analysis/results/*.json` (for every number)
+- `reference/methods-structure.md` only if a design/heading/supplement boundary needs detail
+
+## Procedure
+Use the concise drafting guide and original illustration in `reference/medical-writing.md`;
+read the completed section as a medical explanation of the study, then verify it against
+executed methods. Use the existing notes/acceptance; no extra report is required.
+
+1. Use the protocol and actual executed
+   methods. The guide supplies a flexible architecture, not a mandatory heading template.
+   Do not choose, cite or fill a reporting checklist here; any explicitly requested journal
+   form is handled after S20 in the submission integration copy.
+   The Methods describes what was actually done, in the order a medical reader needs it.
+2. Before drafting, choose and record a compact heading map appropriate to this design. For
+   an ordinary original clinical study, prefer about four to seven substantive subsections:
+   design/setting; participants or data source; design-specific procedures or measurements;
+   outcomes/variables; and statistical analysis. Merge short adjacent topics. Do not create
+   a heading merely because a checklist contains an item.
+3. Make `Statistical analysis` the final main-Methods subsection for quantitative studies
+   (`Data analysis` for qualitative studies; `Evidence synthesis` or equivalent for reviews),
+   unless the target journal's current examples clearly use another order. Put prespecified
+   sensitivity, subgroup, missing-data and software details inside that subsection when they
+   can be stated briefly. Do not append automatic standalone headings for them after it.
+4. Write `project/07_manuscript/methods.md`. It must retain the primary design, setting,
+   eligibility, exposures/interventions/tests, primary outcomes and primary analysis needed
+   to understand validity and interpret the Results.
+5. If—and only if—implementation detail is genuinely long, write
+   `project/07_manuscript/supplementary_methods.md` and refer to it once from the main Methods.
+   Suitable content includes complete search strings, code lists, assay protocols, model
+   tuning grids, full imputation or sensitivity specifications, interview guides and a full
+   statistical analysis plan. Do not move a core design decision or primary analysis there.
+   Supplementary Methods is prose only: do not embed Markdown, HTML or grid tables. Any
+   genuinely tabular material must already be planned as `Table S*`, built later under
+   `04_tables/supplementary/` with the three-line table writer, and referenced from the prose.
+   Do not use `---`, `***` or `___` as visual separators; use ordinary paragraph spacing.
+6. Cite methodological choices with pandoc markers `[@key]`—the cutoff you adopted, the
+   scoring system and model. Keys must come from records already
+   retrieved this session.
+7. Own-study counts, follow-up and findings come from executed analysis JSON. Genuine design
+   dates or software versions may use the existing typed Methods-constant path with actual
+   protocol/environment evidence, not an invented result export or free-number whitelist.
+   If a scientific finding is missing, correct its actual producer/export in scope; a metadata
+   clarification does not require refitting models or resetting completed stages.
+8. Do not describe an analysis you did not run, and do not omit reportable methods you did.
+   Explain scientifically necessary methods, not checklist paperwork or an invented registration.
+
+## Outputs
+- `07_manuscript/methods.md`
+- `07_manuscript/supplementary_methods.md` (optional; only when justified)
+
+## Hard rules
+- Write only Methods-stage files. Do not also write Results.
+- No default boilerplate subsections after the analysis subsection.
+- The optional supplement may extend reproducibility, never hide core validity information.
+- Supplementary Methods contains no embedded table or Markdown horizontal-rule residue.
+  Tabular content belongs in the supplementary-tables workbook and must pass the S10
+  three-line-table gate.
+- Every finding traceable to results JSON; genuine Methods constants need typed source evidence
+  under `numbers_have_provenance`.
+- No placeholders. `TODO`, `TBD`, `xx.x` and friends fail the gate.
+- Past tense, declarative. No "we aimed to comprehensively investigate".
+
+## Close
+```
+uv run python tools\wf.py check
+uv run python tools\wf.py advance --note "methods drafted; heading map: <...>; supplementary Methods: <not needed/path and why>; citations used: <n>"
+```
+
+

@@ -1,0 +1,268 @@
+"""Three-line (booktabs) xlsx writer.
+
+Layout produced, which is exactly what the `tables_threeline` gate verifies:
+
+    row 1            title, unruled
+    row 2            header, rule above and rule below
+    rows 3..n        data, unruled
+    row n            bottom rule
+    rows n+1..       footnotes, unruled
+
+No vertical rules, no interior horizontal rules. Use this rather than styling cells
+by hand, so every table in the paper is identical.
+"""
+from __future__ import annotations
+
+import re
+import textwrap
+from pathlib import Path
+
+try:
+    from openpyxl import Workbook
+    from openpyxl.styles import Alignment, Border, Font, Side
+    from openpyxl.utils import get_column_letter
+except ImportError as exc:  # pragma: no cover
+    raise SystemExit(
+        "openpyxl is required for table building.\n"
+        "  uv pip install --python .venv/Scripts/python.exe openpyxl"
+    ) from exc
+
+RULE = Side(style="thin", color="FF000000")
+BASE_FONT = "Arial"
+TITLE_PT = 10
+BODY_PT = 9
+FOOT_PT = 8
+MAX_CELL_CHARS = 300
+MAX_FOOTNOTE_CHARS = 1500
+
+
+class TableSpec(dict):
+    """{sheet, title, header, rows, footnotes, align, col_widths}"""
+
+
+def _check(spec: dict) -> None:
+    for key in ("sheet", "title", "header", "rows"):
+        if not spec.get(key):
+            raise ValueError(f"table spec missing '{key}'")
+    if not spec.get("footnotes"):
+        raise ValueError(
+            f"'{spec['sheet']}': footnotes are required. A three-line table needs at least "
+            "an abbreviations or data-format note."
+        )
+    ncol = len(spec["header"])
+    groups, indents = spec.get("group_rows", []), spec.get("indent_rows", [])
+    for indices in (groups, indents):
+        if not isinstance(indices, list) or any(type(i) is not int or not 0 <= i < len(spec["rows"]) for i in indices) or len(set(indices)) != len(indices):
+            raise ValueError("group_rows/indent_rows must be unique zero-based actual data-row indices")
+    if set(groups) & set(indents):
+        raise ValueError("A clinical section header cannot also be an indented category")
+    if any(any(v not in (None, "") for v in spec["rows"][i][1:]) for i in groups):
+        raise ValueError("A group header row must not contain observations or statistics; preserve data on category rows")
+    for i, row in enumerate(spec["rows"], 1):
+        if len(row) != ncol:
+            raise ValueError(
+                f"'{spec['sheet']}' row {i} has {len(row)} cells but the header has {ncol}"
+            )
+        for cell in row:
+            if isinstance(cell, str) and len(cell) > MAX_CELL_CHARS:
+                raise ValueError(
+                    f"'{spec['sheet']}' row {i}: cell of {len(cell)} chars. A table is not a "
+                    "place for prose - move it to the footnote or the manuscript."
+                )
+    total = sum(len(str(f)) for f in spec["footnotes"])
+    if any(len(str(note)) > 32767 for note in spec["footnotes"]):
+        raise ValueError("A footnote exceeds Excel's actual per-cell capacity; move technical detail without silently truncating")
+    if total > MAX_FOOTNOTE_CHARS:
+        import warnings
+        warnings.warn(
+            f"'{spec['sheet']}': footnotes total {total} chars (advisory threshold {MAX_FOOTNOTE_CHARS}). "
+            "Advisory: retain decoding information and move unnecessary technical detail to Methods; do not split each sentence merely to satisfy a character limit."
+        )
+    if not re.match(r"^\s*(table|supplementary table)\s+S?\d+[.:]", spec["title"], re.I):
+        raise ValueError(
+            f"'{spec['sheet']}': title must start with e.g. 'Table 1.' or 'Table S1.' - got "
+            f"{spec['title'][:40]!r}"
+        )
+
+
+def _autowidth(header: list, rows: list, explicit: list | None) -> list[float]:
+    if explicit:
+        return list(explicit)
+    widths = []
+    for i, head in enumerate(header):
+        longest = max([len(str(head))] + [len(str(r[i])) for r in rows] or [0])
+        widths.append(min(48.0, max(10.0, longest * 1.15 + 2)))
+    return widths
+
+
+def _write_sheet(ws, spec: dict) -> None:
+    header = spec["header"]
+    rows = spec["rows"]
+    footnotes = spec["footnotes"]
+    ncol = len(header)
+    align = spec.get("align") or ["left"] + ["center"] * (ncol - 1)
+    last_col = get_column_letter(ncol)
+
+    # --- title (row 1, unruled) ---------------------------------------
+    ws.cell(row=1, column=1, value=spec["title"])
+    ws.cell(row=1, column=1).font = Font(name=BASE_FONT, size=TITLE_PT, bold=True)
+    ws.cell(row=1, column=1).alignment = Alignment(horizontal="left", vertical="center", wrap_text=True)
+    if ncol > 1:
+        ws.merge_cells(f"A1:{last_col}1")
+
+    # --- header (row 2, ruled above and below) -------------------------
+    for c, text in enumerate(header, 1):
+        cell = ws.cell(row=2, column=c, value=text)
+        cell.font = Font(name=BASE_FONT, size=BODY_PT, bold=True)
+        cell.alignment = Alignment(horizontal=align[c - 1], vertical="bottom", wrap_text=True)
+        cell.border = Border(top=RULE, bottom=RULE)
+
+    # --- data ----------------------------------------------------------
+    first_data = 3
+    for r, row in enumerate(rows, first_data):
+        for c, value in enumerate(row, 1):
+            cell = ws.cell(row=r, column=c, value=value)
+            cell.font = Font(name=BASE_FONT, size=BODY_PT)
+            cell.alignment = Alignment(horizontal=align[c - 1], vertical="top", wrap_text=False)
+        index = r - first_data
+        if index in spec.get("group_rows", []):
+            ws.cell(r, 1).font = Font(name=BASE_FONT, size=BODY_PT, bold=True)
+        elif index in spec.get("indent_rows", []):
+            ws.cell(r, 1).alignment = Alignment(horizontal="left", vertical="top", indent=1, wrap_text=True)
+    last_data = first_data + len(rows) - 1
+
+    # --- bottom rule ---------------------------------------------------
+    for c in range(1, ncol + 1):
+        ws.cell(row=last_data, column=c).border = Border(bottom=RULE)
+
+    # --- footnotes (unruled) -------------------------------------------
+    for i, note in enumerate(footnotes):
+        r = last_data + 1 + i
+        cell = ws.cell(row=r, column=1, value=str(note))
+        cell.font = Font(name=BASE_FONT, size=FOOT_PT)
+        cell.alignment = Alignment(horizontal="left", vertical="top", wrap_text=True)
+        if ncol > 1:
+            ws.merge_cells(f"A{r}:{last_col}{r}")
+
+    for i, w in enumerate(_autowidth(header, rows, spec.get("col_widths")), 1):
+        ws.column_dimensions[get_column_letter(i)].width = w
+    ws.sheet_view.showGridLines = False
+    ws.freeze_panes = f"A{first_data}"
+
+
+def _fit_merged_notes(ws, spec: dict) -> None:
+    """Excel does not autofit merged cells; reserve height without changing any text."""
+    width = sum(ws.column_dimensions[get_column_letter(i)].width for i in range(1, len(spec["header"]) + 1))
+    for row, size in [(1, TITLE_PT)] + [(3 + len(spec["rows"]) + i, FOOT_PT) for i in range(len(spec["footnotes"]))]:
+        capacity = max(8, int(width * BODY_PT / size * .80))
+        lines = sum(max(1, len(textwrap.wrap(part, width=capacity))) for part in str(ws.cell(row, 1).value).split("\n"))
+        height = max(15, lines * (size + 4) + 4)
+        if height > 409:
+            import warnings
+            warnings.warn(f"'{spec['sheet']}': title/note retained in full but may exceed Excel's row height; inspect the actual render and reorganize before visual acceptance")
+        ws.row_dimensions[row].height = min(409, height)
+
+
+def write_workbook(path: str | Path, tables: list[dict]) -> Path:
+    """One workbook, one sheet per table. Use this for the supplementary tables."""
+    from wfcore.dependencies import guard_build
+    from wfcore.revision import guard_outputs
+    for parent in Path(path).resolve().parents:
+        if (parent / ".wf/state.json").exists():
+            guard_build(parent)
+            guard_outputs(parent, [Path(path)])
+            break
+    if not tables:
+        raise ValueError("no tables given")
+    for spec in tables:
+        _check(spec)
+    seen = [t["sheet"] for t in tables]
+    if len(seen) != len(set(seen)):
+        raise ValueError(f"duplicate sheet names: {seen}")
+    wb = Workbook()
+    wb.remove(wb.active)
+    for spec in tables:
+        ws = wb.create_sheet(title=spec["sheet"][:31])
+        _write_sheet(ws, spec)
+    # Apply display language from the actual study, never to raw data or model values.
+    import os
+    project_value = os.environ.get("MEDPAPER_PROJECT")
+    if not project_value:
+        project_value = next((str(parent) for parent in Path(path).resolve().parents if (parent / ".wf/state.json").is_file()), None)
+    if project_value:
+        from wfcore.journalspec import label_text
+        project = Path(project_value)
+        for sheet in wb:
+            spec = next(t for t in tables if t["sheet"] == sheet.title)
+            ids = spec.get("identifier_columns") or []
+            indices = set()
+            for value in ids:
+                index = value if type(value) is int else spec["header"].index(value) if value in spec["header"] else -1
+                if not 0 <= index < len(spec["header"]):
+                    raise ValueError("identifier_columns uses actual header names or zero-based column indices")
+                indices.add(index + 1)
+            for row in sheet:
+                for cell in row:
+                    if isinstance(cell.value, str):
+                        cell.value = label_text(cell.value, project, format_numbers=not (cell.row >= 3 and cell.row < 3 + len(spec["rows"]) and cell.column in indices))
+    for sheet, spec in zip(wb.worksheets, tables):
+        _fit_merged_notes(sheet, spec)
+    p = Path(path)
+    p.parent.mkdir(parents=True, exist_ok=True)
+    wb.save(p)
+    from wfcore.determinism import normalize
+    normalize(p)
+    print(f"wrote {p}  ({len(tables)} sheet(s))")
+    return p
+
+
+def write_table(path: str | Path, sheet: str, title: str, header: list,
+                rows: list, footnotes: list, align: list | None = None,
+                col_widths: list | None = None, identifier_columns: list | None = None,
+                group_rows: list | None = None, indent_rows: list | None = None) -> Path:
+    """One workbook holding one table. Use this for each main table."""
+    return write_workbook(path, [{
+        "sheet": sheet, "title": title, "header": header, "rows": rows,
+        "footnotes": footnotes, "align": align, "col_widths": col_widths, "identifier_columns": identifier_columns,
+        "group_rows": group_rows or [], "indent_rows": indent_rows or [],
+    }])
+
+
+def fmt(value, decimals: int = 2, pct: bool = False) -> str:
+    """Consistent numeric rendering. Keeps trailing zeros, which reviewers expect."""
+    if value is None or value == "":
+        return "-"
+    try:
+        f = float(value)
+    except (TypeError, ValueError):
+        return str(value)
+    return f"{f:.{decimals}f}%" if pct else f"{f:.{decimals}f}"
+
+
+def p_value(p, decimals: int | None = None, *, borderline_three_decimals: bool = False) -> str:
+    """APA/medical convention: report small p as an inequality, never as 0.000.
+
+    Optional `decimals` enforces fixed precision when a target journal requires exact P
+    values; `borderline_three_decimals=True` renders 0.045 <= p < 0.055 to 3 decimals so
+    values such as 0.049 and 0.050 are not collapsed into '.05'.
+    """
+    try:
+        f = float(p)
+    except (TypeError, ValueError):
+        return str(p)
+    if decimals is not None:
+        if isinstance(decimals, bool) or not isinstance(decimals, int) or decimals < 1 or decimals > 6:
+            raise ValueError("decimals must be an integer between 1 and 6")
+        floor = 10 ** (-decimals)
+        if f < floor:
+            return f"<{floor:.{decimals}f}"
+        return f"{f:.{decimals}f}"
+    if f < 0.001:
+        return "<0.001"
+    if f < 0.01 or (borderline_three_decimals and 0.045 <= f < 0.055):
+        return f"{f:.3f}"
+    return f"{f:.2f}"
+
+
+def ci(estimate, low, high, decimals: int = 2) -> str:
+    return f"{fmt(estimate, decimals)} ({fmt(low, decimals)} to {fmt(high, decimals)})"

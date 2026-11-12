@@ -1,0 +1,21 @@
+medpaper - MedPaper workflow driver
+
+  medpaper                              status + active stage card (run inside a paper workspace)
+  medpaper new -Slug <name> -IdeaFile <idea.md> [-DataDir <dir>]
+                                        create a new paper workspace from any research idea
+  medpaper check                        run current-stage gates
+  medpaper advance -n "<note>"          close current stage and advance
+  medpaper card [--details]             show the active stage card
+  medpaper decide <name> <value> -w "<why>"   record a gated decision
+  medpaper handoff                      bounded resume context after context compaction
+  medpaper tree -v                      whole pipeline with status
+  medpaper doctor                       environment and wiring check
+  medpaper clean [--apply]              report/delete scratch files
+  medpaper init-env -key <NCBI_API_KEY> -email <you@example.org>
+                                        set global env once (User level, permanent)
+  medpaper help                         this help
+
+Other wf.py subcommands pass through automatically (loop, note, rebuild, migrate, config, ...).
+
+Environment: PYTHONUTF8, NCBI_API_KEY and NCBI_API_EMAIL are injected automatically;
+set them once with `medpaper init-env` (or via Windows environment settings).

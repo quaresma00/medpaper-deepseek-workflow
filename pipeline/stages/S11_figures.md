@@ -1,0 +1,128 @@
+# S11 - Render figures, then actually look at them
+
+## Production boundary
+Read `reference/r-first.md`, `reference/efficient-quality.md` and `reference/figure-standards.md`.
+New medical statistical figures default to R. Reuse the approved S07 data, semantics and
+prototype expression. Keep a literal .R script beside vector PDF/PNG in 05_figures/out.
+Use mature clinical R packages and ggplot/grid/patchwork outputs as appropriate, with one
+statistical source per result. Do not refit or rerun imputation to adjust a graph.
+Retain an approved legacy Python graph or a concrete documented Python exception.
+Missing R packages require repair, not an unannounced Python fallback.
+
+## Procedure
+Choose the design-appropriate recipe using `reference/r-first.md`'s medical figure routes.
+The endpoint, measure and required uncertainty determine the graph; a theme cannot supply
+missing clinical content. Use `medpaper_forest_table` for an appropriate aligned numerical
+forest with explicit measure/null/scale; it formats existing estimates without refitting.
+
+1. Confirm Rscript and the actual required packages/environment. Put renderer="R" in each
+   new figure entry, plus its .R script, PNG/PDF paths, width, source_results and archetype.
+   A Python exception declares renderer="Python" and a substantive renderer_reason.
+   No additional routine user approval stop is introduced.
+2. Write one source per figure. Source tools/figures/r_style.R and read declared executed
+   results with medpaper_result(). Centralize theme, font, physical size, palette and panel
+   layout. Use medpaper_theme() and medpaper_save(); pass actual component ggplots in
+   panels=list(p1,p2,...) for composites. Use patchwork/grid instead of repeated pixel nudges.
+   The plot expression is the source of truth; labels and uncertainty come from real results.
+3. Run only the requested figure:
+```powershell
+uv run python tools/figures/render_r.py --figure "Figure 1"
+uv run python tools/figures/qc.py --figure "Figure 1"
+```
+   Python in the runner does not draw the plot. R uses explicit objects/physical sizes and
+   generates PNG+vector PDF; TIFF is opt-in. Render warnings fail instead of silently
+   dropping observations. Staging preserves existing outputs on failed R builds.
+4. Read actual QC findings. R QC inspects SVG font/stroke/text positions and built ggplot
+   layers, PNG resolution/content and bound script/results/render identities. For 1.27+, any
+   explicit statistical text rendered inside a figure (`HR`/`OR`/`RR`/`CI`/`P`, sample counts,
+   or effect estimates) must also be bound item-by-item under `figure_annotations` in
+   `07_manuscript/claim_bindings.json` to its exact `fact_id`, result `source`/`pointer` and
+   value fields (`qc.py` + `numbers_have_provenance source=figures`).
+   Text-height/collision estimates are conservative; glyph coverage, PDF font fallback,
+   clipping paths and complex layouts remain visual-review items, not fabricated PASS.
+   Some specialized base/grid graphics need a measured adapter. Keep the appropriate R
+   tool; do not relabel a chart or fabricate elements to evade checks.
+5. Open the actual rendered PNG and inspect font/glyphs, overlap/clipping, clinical labels,
+   reference groups, units, denominator/time window, uncertainty, axes, risk tables,
+   panel alignment, colour/greyscale readability, margins and resolution. For complex
+   layouts also open the vector PDF. Use one <=1280px, <=500KB preview per tool round.
+   Warnings must be resolved or substantively addressed in the existing review.
+6. Correct only the affected producing script/config, rerender that figure and rerun its
+   QC. Do not redo cleaning/models or unchanged figures for a visual-only correction.
+   A substantive statistical correction follows the existing scientific revision route.
+7. Keep explanatory prose backstage or in its proper Methods destination. Figure legends
+   only decode the display, panels, symbols and necessary test/error-bar definitions.
+   They do not repeat Results directions/effect estimates. Preserve journal-mandated risk
+   tables, flow counts, units and essential source-bound statistics. Use the existing
+   legend length as advisory unless the journal explicitly limits it; record actual moved
+   material in 05_figures/moved_to_legend.md.
+   - Clinical internal labels: All text rendered inside figures (axis titles, tick labels, legend
+     keys, panel titles, annotations, and flowchart boxes) must be clinical-reader ready. Eliminate
+     analytics pipeline phrasing (e.g. 'filtered where age >= 18', 'dropna()', 'Analysis Report Figure 1'),
+     raw variables, and model code. Apply `apply_labels()` or `medpaper_label()` in R scripts. Figures are
+     strictly gated by `display_labels_clinical`.
+8. Write 05_figures/manifest.json with actual renderer, script, source_results, png/pdf,
+   width/size_mm/dpi, R/package versions or the Python exception, and review_rounds.
+   SVG/rmeta/artist sidecars are backstage QC, not submission uploads.
+9. Mark visual_reviewed in qc_report.json and record the figures_visually_confirmed decision
+   only after genuine image inspection. Automated QC never supplies this approval.
+10. Clear task scratch. Journal-specific adaptations after S19 use integration copies and
+    preserve the accepted scientific script/output.
+
+## Python exceptions
+For an existing approved Matplotlib figure or concrete exception, retain its source and
+tools/figures/style.py + recipes.py. Use the installed Tavotto skill and desktop handoff
+only for Matplotlib, never for R graphs. No R-to-Matplotlib conversion is needed.
+ImageGen may critique readability but never redraw or edit statistical content; fix source
+code and inspect the deterministic new render.
+
+## Outputs
+- 05_figures/manifest.json
+- 05_figures/qc/qc_report.json
+- 05_figures/moved_to_legend.md
+- Co-located producing scripts and PDF/PNG; legacy separated scripts remain supported.
+
+## Hard rules
+No invented results, fabricated inspection or skipped source checks. Keep all data.
+Do not fix a layout defect by shrinking below the font floor. Correct the layout structure.
+No gratuitous 3-D/gridlines or unplanned figures. Missing inspection is pending, not PASS.
+
+## Close
+```powershell
+uv run python tools/wf.py check
+uv run python tools/wf.py advance --note "Declared R/Python outputs rendered; measured QC and actual visual review completed; unresolved items stated."
+```
+
+
+## Medical-reader presentation
+
+Read `reference/medical-reader-presentation.md`: check actual clinical labels, counting units,
+denominators, statistical marks and state distinctions, table footnotes and figure decoding.
+Retain necessary methods; do not imply prespecification or change counts by renaming units.
+Use the existing acceptance/review, not an additional audit. At S23 verify actual rendered
+Word pages and journal-directed legend/figure placement; don't reintroduce forbidden controls.
+
+## Structural quality and bounded rework
+
+Read `reference/structural-quality.md`. Use clinical display names and physical-size assumptions
+before production. Percentage claims bind numerator, denominator and source percentage basis.
+Every actionable point in every review section needs a stable ID and disposition, not only
+the must-fix subset. Review neutral actual artifacts; don't prime with the writer's conclusion.
+Use read-only rework preview and actual scoped checks; never infer scientific change from a
+publication label number or silently invalidate author approval. Existing privacy, freezes,
+centralized abbreviations, Word cleanup and final actual-page inspection remain in force.
+
+
+
+# v1.22 independent panel tags and production reading
+
+R rendering is mandatory for new statistical figures unless an actual approved exception
+applies; R alone does not certify medical layout. Multi-panel letters are independent A/B/C
+at each component's outer upper-left corner, separate from clinical titles/facet strips.
+Use `medpaper_compose(panels,ncol=N)` and save the actual `panels` list with `medpaper_save`.
+Declare `panel_layout.columns` (and true bounds for irregular grids) in the plan. Inspect
+the actual PNG/PDF at planned physical size: unit, denominator, interval/statistical columns,
+clinical group labels and whitespace together. Use existing `display_review.json.final_reviews`
+to bind the actual production render, following `reference/project-benchmarking.md`.
+The SVG tag gate and typography checks support, and do not replace, this medical reading.
+

@@ -1,0 +1,65 @@
+# S01 - Intake: normalize the research idea
+
+## Purpose
+Turn the user's free-form idea document into a machine-readable spec, so that every
+later stage argues against the same target instead of a remembered paraphrase.
+
+## Inputs
+- The user's research idea file. It belongs in `project/00_input/`. If the user pasted
+  it into chat instead, save it there first (`project/00_input/idea_source.md`).
+
+## Procedure
+1. Read the idea file in full. Do not summarize from the filename or a partial read.
+2. Extract the study skeleton. Where the idea is silent, write `null` and add the gap to
+   `open_questions` - never fill a gap with a plausible guess.
+3. Write `project/01_protocol/idea.json`:
+
+```json
+{
+  "title_working": "",
+  "design": "cross-sectional | cohort | case-control | RCT | diagnostic accuracy | prognostic model | meta-analysis | secondary analysis of <db>",
+  "population": {"who": "", "setting": "", "inclusion": [], "exclusion": []},
+  "exposure": {"name": "", "definition": null, "measurement": null},
+  "comparator": {"name": "", "definition": null},
+  "outcomes": {"primary": [{"name": "", "definition": null, "timing": null}], "secondary": []},
+  "covariates_proposed": [],
+  "claimed_novelty": "one sentence: what is not yet known that this would establish",
+  "data_source_candidates": [{"name": "", "access": "public | licensed | institutional | to-be-collected", "why": ""}],
+  "open_questions": ["every ambiguity you had to leave unresolved"]
+}
+```
+4. Create `project/03_analysis/notes.md` with these four headings and a first pass at each.
+   This file is the ONLY legitimate source for Introduction and Discussion framing later:
+
+```markdown
+# Notes
+## Introduction points
+## Discussion points
+## Limitations
+## Surprises / must-not-forget
+```
+5. If there are no genuinely unresolved material questions, use `open_questions: []`;
+   do not invent registration/checklist questions to populate the list. If `open_questions`
+   contains anything that would change the design, ask the user now.
+   Do not proceed on assumptions about population, exposure definition, or outcome timing.
+
+## Outputs
+- `01_protocol/idea.json`
+- `03_analysis/notes.md`
+
+## Hard rules
+New studies default to American English in `.wf/config.toml`; reuse a stated user preference.
+`wf config set spelling british` changes the display policy, not scientific facts. Do not
+rewrite an old unconfigured study just for an engine upgrade.
+- Do not ask routine database-mining/retrospective users to register a study or choose a
+  reporting checklist. Do not create candidate-guideline or checklist fields. Follow the
+  applicability boundary in AGENTS.md; journal reporting paperwork starts only at S20.
+- No literature search yet. That is S02, and it must be recorded through the PubMed client.
+- Do not write any manuscript prose in this stage.
+
+## Close
+```
+uv run python tools/wf.py check
+uv run python tools/wf.py advance --note "idea normalized; design=<x>; unresolved: <...>"
+```
+
