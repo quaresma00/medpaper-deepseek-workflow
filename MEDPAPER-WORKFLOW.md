@@ -56,7 +56,7 @@ wf status → wf card（读当前阶段卡）→ 按需加载 reference/<专题�
 | 4 | **全文获取瀑布** | S15 按序尝试：EuropePMC/PMC OA → Unpaywall → OpenAlex → **scihub 镜像等途径（用户已授权）** → 找用户。任何途径的全文一律 `fulltext.py register --access authorized --route <途径>` + 身份核验（DOI/标题/首作者），身份不过不深读 |
 | 5 | **早期止损** | S02 第一次 GO/PIVOT/STOP、S06 第二次判断，**以及任何阶段发现"不值得继续/收益少"** → 立即向用户报告证据 + 成本-收益评估 + 建议，等用户拍板；绝不默默硬做或为了推进而推进 |
 | 6 | **图表对标硬门禁** | S07 联网抓 3–5 篇最相近已发表论文全文，逐篇列图表清单（主/补图、主/补表、类型），生成**对标对比表**给用户过目；本计划数量/类型明显偏少 → 门禁失败并给出补图建议（亚组森林图、敏感性图、校准、DCA、剂量反应、平衡图、补充拆分），只有用户确认或明确理由才允许低于对标 |
-| 7 | **S12.5 分析证据预审** | S12 对账后、S13 文献库前，**新增强制检查点**：独立只读子代理审查 methods + results + 全部表图 + 结果 JSON 摘要 + claim_bindings + 对标报告，判定 SUPPORT / REVISE_ANALYSIS（回 S05/S08/S09/S10/S11 返修重审）/ INSUFFICIENT（止损上报）；**在组装/摘要等高成本写作之前解决"证据是否撑得起 SCIE original article"** |
+| 7 | **S12.5 分析证据预审** | S12 对账后、S13 文献库前，**新增强制检查点**：独立只读子代理审查 methods + results + 全部表图 + 结果 JSON 摘要 + claim_bindings + 对标报告，判定 SUPPORT / REVISE_ANALYSIS（回 S05/S08/S09/S10/S11 返修重审）/ INSUFFICIENT（止损上报）；**在组装/摘要等高成本写作之前解决"证据是否撑得起 SCIE original article"**。**预审完成后询问用户是否需要整理第三方审阅包（ZIP）供第三方审阅**；后续准备投稿时（S24 前后）按用户需要再次决定是否导出 |
 | 8 | **指南获取与逐条执行** | `journal.py fetch --mode auto` → 被拦时用 `capture_guidelines.py`（playwright，headful 遇验证码交用户）→ `journal.py register --url --file --why --retrieved-at` 留痕。抓到的官方指南转带行号文本 → 生成 `guideline_requirements.json`（每条：原文引文+行号+类别+执行方式）→ S23 生成**合规矩阵**（每条 PASS/FAIL/WARN+证据位置）→ S25 逐条对照原文终审。投稿时用同一浏览器流程采集**投稿系统实际要求** → 与指南 diff → 修正投稿包并给"指南 vs 系统差异清单" |
 | 9 | **命名与换刊** | 投稿包目录固定 `08_submission/releases/<期刊名>_<YYYY-MM-DD>/`；拒稿换刊 `journal.py begin`（归档旧刊）→ **重走第 8 条全套**（新指南抓取+新要求清单+新合规矩阵+新命名）→ 科学母稿冻结不动，只重做期刊层 |
 
@@ -76,7 +76,7 @@ wf status → wf card（读当前阶段卡）→ 按需加载 reference/<专题�
 |---|---|
 | S01 | 仅当 `open_questions` 有会改变设计的歧义时提问一次 |
 | S02 / S06 / S12.5 / 任何止损点 | 阅读证据与建议，拍板 GO/PIVOT/STOP/返修 |
-| S19 | 审阅全文+表+图+独立报告；提意见批次；最终明确回复**"我确认这一版"** → 科学母稿冻结。需要给第三方审核时：`medpaper export --scope S19` 生成审阅包 ZIP（内容位置 = 审阅轮报告 + 稿件/表/图路径） |
+| S19 | 审阅全文+表+图+独立报告；提意见批次；最终明确回复**"我确认这一版"** → 科学母稿冻结 |
 | S20 | 从候选清单（接受概率排序+退稿梯队）选定期刊 |
 | S21 | 提供作者/单位/ORCID/基金/利益冲突/伦理/数据可用性等事实（不编造） |
 | S24 | 检查投稿包；修改；明确回复**"我确认这一版"** → 冻结 |
@@ -130,7 +130,7 @@ tools/pubmed/fulltext.py fetch|register          # 全文（OA 路由 / 外部�
 tools/tables/（三线表生成）、tools/figures/render_r.py --figure "..."、tools/figures/qc.py
 # 审阅与返工
 tools/review_round.py start|ingest|close|decide
-tools/review_round.py export --scope S19      # 导出审阅包 ZIP 供第三方审核（用户明确要求时）
+tools/review_round.py export --scope S12_5|S24   # 按需导出审阅包 ZIP：仅在用户确认后使用（S12.5 预审后询问、投稿准备期按需）
 tools/rework.py batch|status|check|close
 # 期刊层
 tools/journal.py begin|fetch|register|show|csl|seal|status|check
