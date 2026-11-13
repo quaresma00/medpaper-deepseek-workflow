@@ -103,6 +103,7 @@ medpaper advance -n "本阶段完成内容与决策"
 
 **语言**
 - 每个部分写完 md 立即去 AI 化 + 医学润色（不是组装后）；医生能看懂，零工程词/代码词
+- 写作风格参考：`writing-style/`（去 AI 化检查清单 + anti-defensive-writing 发布会原则——表达自信、禁自我削弱，但阴性/局限如实报告）
 - 图注不复述结果；缩写集中管理
 
 **图表**
@@ -167,12 +168,14 @@ medpaper advance -n "本阶段完成内容与决策"
 |---|---|
 | `README.md` | 本页：主页 + 工作流总框架 |
 | `MEDPAPER-WORKFLOW.md` | 智能体执行细则：阶段循环、红线纪律、子代理契约、实测修复清单 |
+| `writing-style/` | 写作风格与去 AI 化参考：医学版去 AI+润色检查清单、anti-defensive-writing（中英 SKILL+提示词） |
 | `dsh/` | DeepSeek Harness 集成（skill + 全局入口 + install.ps1） |
 
 ```text
 medpaper-deepseek-workflow/
 ├── pipeline/ tools/ reference/ project/ AGENTS.md bootstrap.py …  # 引擎母版（只读、通用）
 ├── medpaper-helpers/    # 执行层：new-paper.ps1、medpaper.ps1（驱动）、capture_guidelines.py
+├── writing-style/       # 写作风格与去 AI 化参考（de-ai-polish.md、anti-defensive-writing/）
 ├── dsh/                 # DeepSeek Harness 集成
 ├── MEDPAPER-WORKFLOW.md # 智能体执行细则
 └── README.md            # 主页 + 总框架
