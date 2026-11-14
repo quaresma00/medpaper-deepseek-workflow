@@ -176,6 +176,7 @@ medpaper advance -n "本阶段完成内容与决策"
 medpaper-deepseek-workflow/
 ├── pipeline/ tools/ reference/ project/ AGENTS.md bootstrap.py …  # 引擎母版（只读、通用）
 ├── medpaper-helpers/    # 执行层：new-paper.ps1、medpaper.ps1（驱动）、capture_guidelines.py
+│   └── templates/       # 质量模板：S12.5 预审判据、S09 数字事实包、S13 角色覆盖表、S16 前作对比表
 ├── writing-style/       # 写作风格与去 AI 化参考（de-ai-polish.md、anti-defensive-writing/）
 ├── dsh/                 # DeepSeek Harness 集成
 ├── MEDPAPER-WORKFLOW.md # 智能体执行细则
